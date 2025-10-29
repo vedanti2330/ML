@@ -2,54 +2,79 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load the saved model and scaler once at app start
+# Load saved model and scaler
 model = joblib.load('best_credit_risk_model.pkl')
 scaler = joblib.load('scaler.pkl')
 
-# List of features expected by model
-feature_names = ['age', 'sex', 'job', 'saving_accounts', 'checking_account', 'credit_amount', 'duration',
-                 'marital_status', 'education_level', 'number_of_dependents', 'income', 'employment_status',
-                 'existing_loans_count', 'credit_history_length', 'previous_defaults', 'credit_score',
-                 'installment_rate', 'loan_type', 'interest_rate', 'collateral']
+# Define encoding dictionaries to convert user-friendly inputs to model expected encoded values
+sex_map = {'Female': 0, 'Male': 1}
+saving_accounts_map = {'little': 0, 'moderate': 1, 'quite rich': 2, 'rich': 3, 'no info': 4}
+checking_account_map = {'no': 0, 'little': 1, 'moderate': 2, 'rich': 3, 'no info': 4}
+marital_status_map = {'single': 0, 'married': 1, 'divorced': 2}
+education_level_map = {'none': 0, 'high school': 1, 'graduate': 2, 'postgraduate': 3, 'phd': 4}
+employment_status_map = {'unemployed': 0, 'employed': 1, 'self-employed': 2, 'retired': 3, 'student': 4, 'other': 5}
+loan_type_map = {'personal': 0, 'business': 1, 'car': 2, 'mortgage': 3, 'education': 4, 'domestic appliances':5}
+collateral_map = {'none': 0, 'property': 1, 'vehicle': 2, 'guarantor': 3}
 
-# Streamlit UI
 st.title("Credit Risk Prediction")
 
-# Create input widgets for each feature
-input_data = {}
+# User inputs with friendly options
+age = st.number_input('Age', 18, 100, 30)
+sex = st.selectbox('Sex', list(sex_map.keys()))
+job = st.number_input('Job (0-5 scale)', 0, 5, 2)
+saving_accounts = st.selectbox('Saving Accounts', list(saving_accounts_map.keys()))
+checking_account = st.selectbox('Checking Account', list(checking_account_map.keys()))
+credit_amount = st.number_input('Credit Amount', 100, 1000000, 5000)
+duration = st.number_input('Duration (months)', 1, 120, 36)
+marital_status = st.selectbox('Marital Status', list(marital_status_map.keys()))
+education_level = st.selectbox('Education Level', list(education_level_map.keys()))
+number_of_dependents = st.number_input('Number of Dependents', 0, 10, 1)
+income = st.number_input('Income', 0, 1000000, 35000)
+employment_status = st.selectbox('Employment Status', list(employment_status_map.keys()))
+existing_loans_count = st.number_input('Existing Loans Count', 0, 10, 0)
+credit_history_length = st.number_input('Credit History Length (years)', 0, 50, 4)
+previous_defaults = st.number_input('Previous Defaults', 0, 10, 0)
+credit_score = st.number_input('Credit Score', 0, 1000, 650)
+installment_rate = st.number_input('Installment Rate', 0, 10, 3)
+loan_type = st.selectbox('Loan Type', list(loan_type_map.keys()))
+interest_rate = st.number_input('Interest Rate (%)', 0.0, 100.0, 5.0)
+collateral = st.selectbox('Collateral', list(collateral_map.keys()))
 
-input_data['age'] = st.number_input('Age', min_value=18, max_value=100, value=30)
-input_data['sex'] = st.selectbox('Sex', options=[0, 1], format_func=lambda x: 'Female' if x==0 else 'Male')
-input_data['job'] = st.number_input('Job (encoded)', min_value=0, max_value=5, value=2)
-input_data['saving_accounts'] = st.number_input('Saving Accounts (encoded)', min_value=0, max_value=5, value=0)
-input_data['checking_account'] = st.number_input('Checking Account (encoded)', min_value=0, max_value=5, value=1)
-input_data['credit_amount'] = st.number_input('Credit Amount', min_value=100, max_value=1000000, value=5000)
-input_data['duration'] = st.number_input('Duration (months)', min_value=1, max_value=120, value=36)
-input_data['marital_status'] = st.number_input('Marital Status (encoded)', min_value=0, max_value=5, value=1)
-input_data['education_level'] = st.number_input('Education Level (encoded)', min_value=0, max_value=5, value=2)
-input_data['number_of_dependents'] = st.number_input('Number of Dependents', min_value=0, max_value=10, value=1)
-input_data['income'] = st.number_input('Income', min_value=0, max_value=1000000, value=35000)
-input_data['employment_status'] = st.number_input('Employment Status (encoded)', min_value=0, max_value=5, value=1)
-input_data['existing_loans_count'] = st.number_input('Existing Loans Count', min_value=0, max_value=10, value=0)
-input_data['credit_history_length'] = st.number_input('Credit History Length', min_value=0, max_value=50, value=4)
-input_data['previous_defaults'] = st.number_input('Previous Defaults', min_value=0, max_value=10, value=0)
-input_data['credit_score'] = st.number_input('Credit Score', min_value=0, max_value=1000, value=650)
-input_data['installment_rate'] = st.number_input('Installment Rate', min_value=0, max_value=10, value=3)
-input_data['loan_type'] = st.number_input('Loan Type (encoded)', min_value=0, max_value=5, value=1)
-input_data['interest_rate'] = st.number_input('Interest Rate', min_value=0.0, max_value=100.0, value=5.0)
-input_data['collateral'] = st.number_input('Collateral (encoded)', min_value=0, max_value=10, value=1)
+if st.button('Predict Credit Risk'):
+    # Map user-friendly inputs to encoded values
+    input_dict = {
+        'age': age,
+        'sex': sex_map[sex],
+        'job': job,
+        'saving_accounts': saving_accounts_map[saving_accounts],
+        'checking_account': checking_account_map[checking_account],
+        'credit_amount': credit_amount,
+        'duration': duration,
+        'marital_status': marital_status_map[marital_status],
+        'education_level': education_level_map[education_level],
+        'number_of_dependents': number_of_dependents,
+        'income': income,
+        'employment_status': employment_status_map[employment_status],
+        'existing_loans_count': existing_loans_count,
+        'credit_history_length': credit_history_length,
+        'previous_defaults': previous_defaults,
+        'credit_score': credit_score,
+        'installment_rate': installment_rate,
+        'loan_type': loan_type_map[loan_type],
+        'interest_rate': interest_rate,
+        'collateral': collateral_map[collateral]
+    }
 
-if st.button("Predict Credit Risk"):
-    input_df = pd.DataFrame([input_data], columns=feature_names)
-    
-    # Scale numerical features using loaded scaler
-    numerical_cols = ['age', 'credit_amount', 'duration', 'number_of_dependents', 'income',
-                      'existing_loans_count', 'credit_history_length', 'previous_defaults',
-                      'credit_score', 'installment_rate', 'interest_rate']
+    input_df = pd.DataFrame([input_dict])
+
+    # Scale numerical features
+    numerical_cols = ['age', 'credit_amount', 'duration', 'number_of_dependents',
+                      'income', 'existing_loans_count', 'credit_history_length',
+                      'previous_defaults', 'credit_score', 'installment_rate', 'interest_rate']
     input_df[numerical_cols] = scaler.transform(input_df[numerical_cols])
-    
-    # Predict
+
+    # Predict using your model
     prediction = model.predict(input_df)[0]
-    result = "Good Credit Risk" if prediction == 0 else "Bad Credit Risk"
-    
-    st.success(f"Prediction: {result}")
+
+    result_text = "Good Credit Risk" if prediction == 0 else "Bad Credit Risk"
+    st.success(f'Prediction: {result_text}')
